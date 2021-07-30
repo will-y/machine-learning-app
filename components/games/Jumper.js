@@ -6,6 +6,9 @@ const acceleration = 1;
 const floor = Dimensions.get("window").height - 200;
 const jumpSpeed = 10;
 const maxJumpResets = 15;
+const playerHeight = 50;
+const playerWidth = 20;
+const platformHeight = 20;
 
 class Jumper extends React.Component {
     constructor(props) {
@@ -65,8 +68,9 @@ class Jumper extends React.Component {
                 <View style={[styles.player,
                     {
                         top: this.state.y,
-                        left: Dimensions.get('window').width / 2 - 25
+                        left: (Dimensions.get('window').width - playerWidth) / 2
                     }]} />
+                <View style={styles.platform} />
             </GameEngine>
         );
     }
@@ -76,9 +80,16 @@ const styles = StyleSheet.create({
     player: {
         position: "absolute",
         backgroundColor: "green",
-        width: 50,
-        height: 50,
-        left: "calc(50% - 25pt)"
+        width: playerWidth,
+        height: playerHeight
+    },
+    platform: {
+        position: "absolute",
+        backgroundColor: "black",
+        width: 100,
+        height: 20,
+        top: floor + playerHeight,
+        left: Dimensions.get('window').width / 2 - 50
     }
 })
 
