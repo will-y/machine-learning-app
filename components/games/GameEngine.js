@@ -66,7 +66,8 @@ class GameEngine extends React.Component {
 const styles = StyleSheet.create({
     gameContainer: {
         flex: 1,
-        backgroundColor: "red"
+        backgroundColor: "red",
+        overflow: "hidden"
     },
     container: {
         flex: 1

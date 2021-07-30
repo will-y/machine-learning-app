@@ -1,41 +1,85 @@
 import React from "react";
-import { View } from "react-native";
+import {StyleSheet, View, Dimensions} from "react-native";
 import GameEngine from "./GameEngine";
+
+const acceleration = 1;
+const floor = Dimensions.get("window").height - 200;
+const jumpSpeed = 10;
+const maxJumpResets = 15;
 
 class Jumper extends React.Component {
     constructor(props) {
         super(props);
 
+        this.shouldJump = false;
+        this.resets = 0;
+
+
         this.state = {
-            x: 0,
-            y: 0
+            velocity: 0,
+            y: floor
         };
     }
 
     update = () => {
-        this.setState((prev, props) => {
+        this.setState((prev) => {
+            let vel = prev.velocity;
+
+            if (this.shouldJump && this.resets < maxJumpResets) {
+                vel = jumpSpeed;
+                this.resets++;
+            }
+
+            let y = prev.y - vel;
+            if (y > floor) {
+                y = floor;
+                vel = 0;
+            } else {
+                vel = vel - acceleration;
+            }
             return {
-                x: prev.x + 1,
-                y: prev.y + 1
+                y: y,
+                velocity: vel
             }
         });
     }
 
     onPressIn = () => {
         console.log("press in");
+        if (this.state.y === floor) {
+            this.shouldJump = true;
+        }
     }
 
     onPressOut = () => {
         console.log("press out");
+        this.shouldJump = false;
+        this.resets = 0;
     }
 
     render() {
         return (
-            <GameEngine updateFunction={this.update} onPressIn={this.onPressIn} onPressOut={this.onPressOut}>
-                <View style={{left: this.state.x, top: this.state.y, position: "absolute", backgroundColor: "green", width: 100, height: 100}} />
+            <GameEngine updateFunction={this.update}
+                        onPressIn={this.onPressIn}
+                        onPressOut={this.onPressOut}>
+                <View style={[styles.player,
+                    {
+                        top: this.state.y,
+                        left: Dimensions.get('window').width / 2 - 25
+                    }]} />
             </GameEngine>
         );
     }
 }
+
+const styles = StyleSheet.create({
+    player: {
+        position: "absolute",
+        backgroundColor: "green",
+        width: 50,
+        height: 50,
+        left: "calc(50% - 25pt)"
+    }
+})
 
 export default Jumper;
