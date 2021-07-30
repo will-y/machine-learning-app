@@ -53,7 +53,6 @@ class GameEngine extends React.Component {
                                       onPressIn={this.onPressIn}
                                       onPressOut={this.onPressOut}>
                 <View style={styles.container}>
-                    <Text>Game Title Goes Here</Text>
                     <View style={styles.gameContainer}>
                         {this.props.children}
                     </View>
