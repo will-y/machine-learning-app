@@ -1,11 +1,17 @@
 import React from "react";
-import {StyleSheet, Text, View} from "react-native";
+import {StyleSheet, Text, TouchableWithoutFeedback, View} from "react-native";
 
 class GameEngine extends React.Component {
     constructor(props) {
         super(props);
 
         this.updateFunction = props.updateFunction;
+
+        this.noop = () => {};
+
+        this.onPressIn = this.props.onPressIn ? this.props.onPressIn : this.noop;
+        this.onPressOut = this.props.onPressOut ? this.props.onPressOut : this.noop;
+        this.onPress = this.props.onPress ? this.props.onPress : this.noop;
 
         this.timerId = null;
     }
@@ -43,12 +49,16 @@ class GameEngine extends React.Component {
 
     render = () => {
         return (
-            <View style={styles.container}>
-                <Text>Game Title Goes Here</Text>
-                <View style={styles.gameContainer}>
-                    {this.props.children}
+            <TouchableWithoutFeedback onPress={this.onPress}
+                                      onPressIn={this.onPressIn}
+                                      onPressOut={this.onPressOut}>
+                <View style={styles.container}>
+                    <Text>Game Title Goes Here</Text>
+                    <View style={styles.gameContainer}>
+                        {this.props.children}
+                    </View>
                 </View>
-            </View>
+            </TouchableWithoutFeedback>
         );
     }
 }

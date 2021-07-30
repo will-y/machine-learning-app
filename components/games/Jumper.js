@@ -21,9 +21,17 @@ class Jumper extends React.Component {
         });
     }
 
+    onPressIn = () => {
+        console.log("press in");
+    }
+
+    onPressOut = () => {
+        console.log("press out");
+    }
+
     render() {
         return (
-            <GameEngine updateFunction={this.update}>
+            <GameEngine updateFunction={this.update} onPressIn={this.onPressIn} onPressOut={this.onPressOut}>
                 <View style={{left: this.state.x, top: this.state.y, position: "absolute", backgroundColor: "green", width: 100, height: 100}} />
             </GameEngine>
         );
