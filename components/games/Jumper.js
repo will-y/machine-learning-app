@@ -9,6 +9,7 @@ const maxJumpResets = 15;
 const playerHeight = 50;
 const playerWidth = 20;
 const platformHeight = 20;
+const platformSpeed = 2;
 
 class Jumper extends React.Component {
     constructor(props) {
@@ -17,11 +18,51 @@ class Jumper extends React.Component {
         this.shouldJump = false;
         this.resets = 0;
 
-
         this.state = {
             velocity: 0,
-            y: floor
+            y: floor,
+            platforms: [{x: 0, width: Dimensions.get('window').width * 2}]
         };
+    }
+
+    /**
+     * Takes in a list of platforms and moves them all to the left
+     * -platformSpeed distance.
+     * Will Remove all of the platforms that have moved off screen
+     * Will add new platforms as needed
+     * @param platforms - an array of platform objects
+     * @return a new array of new platforms
+     */
+    movePlatforms = (platforms) => {
+        const result = [];
+
+        platforms.forEach(platform => {
+            // create new object
+            const newPlatform = {
+                x: platform.x - platformSpeed,
+                width: platform.width
+            }
+
+            // don't add if offscreen
+            if (newPlatform.x + newPlatform.width > 0) {
+                result.push(newPlatform)
+            }
+        })
+
+        return result;
+    }
+
+    /**
+     * Detects if the player is standing on a platform
+     * @param state - the current state of the app, includes player and platform info
+     * @param y - the new y value of the player after applying the velocity
+     * @returns {boolean} - true if there is a platform under the player, false otherwise
+     */
+    isFloor(state, y) {
+        const x = this.getPlayerXPos();
+        return state.platforms.some(platform => {
+            return x >= platform.x && x <= platform.x + platform.width;
+        });
     }
 
     update = () => {
@@ -34,7 +75,7 @@ class Jumper extends React.Component {
             }
 
             let y = prev.y - vel;
-            if (y > floor) {
+            if (this.isFloor(prev, y) && y >= floor) {
                 y = floor;
                 vel = 0;
             } else {
@@ -42,11 +83,13 @@ class Jumper extends React.Component {
             }
             return {
                 y: y,
-                velocity: vel
+                velocity: vel,
+                platforms: this.movePlatforms(prev.platforms)
             }
         });
     }
 
+    // TODO: Very short press can result in not jumping
     onPressIn = () => {
         console.log("press in");
         if (this.state.y === floor) {
@@ -60,17 +103,25 @@ class Jumper extends React.Component {
         this.resets = 0;
     }
 
+    getPlayerXPos = () => {
+        return (Dimensions.get('window').width - playerWidth) / 2;
+    }
+
     render() {
         return (
             <GameEngine updateFunction={this.update}
                         onPressIn={this.onPressIn}
                         onPressOut={this.onPressOut}>
-                <View style={[styles.player,
-                    {
+                <View style={[styles.player, {
                         top: this.state.y,
-                        left: (Dimensions.get('window').width - playerWidth) / 2
-                    }]} />
-                <View style={styles.platform} />
+                        left: this.getPlayerXPos()
+                    }]}/>
+                {this.state.platforms.map((platform, index) =>
+                    <View key={index} style={[styles.platform, {
+                        left: platform.x,
+                        width: platform.width
+                    }]}/>
+                )}
             </GameEngine>
         );
     }
@@ -87,9 +138,8 @@ const styles = StyleSheet.create({
         position: "absolute",
         backgroundColor: "black",
         width: 100,
-        height: 20,
-        top: floor + playerHeight,
-        left: Dimensions.get('window').width / 2 - 50
+        height: platformHeight,
+        top: floor + playerHeight
     }
 })
 
