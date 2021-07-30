@@ -21,7 +21,8 @@ class Jumper extends React.Component {
         this.state = {
             velocity: 0,
             y: floor,
-            platforms: [{x: 0, width: Dimensions.get('window').width * 2}]
+            platforms: [{x: 0, width: Dimensions.get('window').width * 2}],
+            dead: false
         };
     }
 
@@ -67,26 +68,40 @@ class Jumper extends React.Component {
 
     update = () => {
         this.setState((prev) => {
-            let vel = prev.velocity;
+            if (!prev.dead) {
+                let vel = prev.velocity;
 
-            if (this.shouldJump && this.resets < maxJumpResets) {
-                vel = jumpSpeed;
-                this.resets++;
-            }
+                if (this.shouldJump && this.resets < maxJumpResets) {
+                    vel = jumpSpeed;
+                    this.resets++;
+                }
 
-            let y = prev.y - vel;
-            if (this.isFloor(prev, y) && y >= floor) {
-                y = floor;
-                vel = 0;
+                let y = prev.y - vel;
+                if (this.isFloor(prev, y) && y >= floor) {
+                    y = floor;
+                    vel = 0;
+                } else {
+                    vel = vel - acceleration;
+                }
+                return {
+                    y: y,
+                    velocity: vel,
+                    platforms: this.movePlatforms(prev.platforms),
+                    dead: this.checkDeath(y)
+                }
             } else {
-                vel = vel - acceleration;
-            }
-            return {
-                y: y,
-                velocity: vel,
-                platforms: this.movePlatforms(prev.platforms)
+                return {};
             }
         });
+    }
+
+    /**
+     * Checks if the player has fallen off the screen in order to trigger the death screen
+     * @param y - y position of the player
+     * @return {boolean} true if player should die
+     */
+    checkDeath = y => {
+        return (y > Dimensions.get('window').height);
     }
 
     // TODO: Very short press can result in not jumping
@@ -109,25 +124,33 @@ class Jumper extends React.Component {
 
     render() {
         return (
-            <GameEngine updateFunction={this.update}
-                        onPressIn={this.onPressIn}
-                        onPressOut={this.onPressOut}>
-                <View style={[styles.player, {
+            <View style={styles.container}>
+                <GameEngine updateFunction={this.update}
+                            onPressIn={this.onPressIn}
+                            onPressOut={this.onPressOut}>
+                    <View style={[styles.player, {
                         top: this.state.y,
                         left: this.getPlayerXPos()
                     }]}/>
-                {this.state.platforms.map((platform, index) =>
-                    <View key={index} style={[styles.platform, {
-                        left: platform.x,
-                        width: platform.width
-                    }]}/>
-                )}
-            </GameEngine>
+                    {this.state.platforms.map((platform, index) =>
+                        <View key={index} style={[styles.platform, {
+                            left: platform.x,
+                            width: platform.width
+                        }]}/>
+                    )}
+                </GameEngine>
+                {this.state.dead && <View style={styles.deathContainer}>
+
+                </View>}
+            </View>
         );
     }
 }
 
 const styles = StyleSheet.create({
+    container: {
+        flex: 1
+    },
     player: {
         position: "absolute",
         backgroundColor: "green",
@@ -140,6 +163,13 @@ const styles = StyleSheet.create({
         width: 100,
         height: platformHeight,
         top: floor + playerHeight
+    },
+    deathContainer: {
+        position: "absolute",
+        height: "100%",
+        width: "100%",
+        backgroundColor: "grey",
+        opacity: 0.5
     }
 })
 
