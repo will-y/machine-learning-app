@@ -1,5 +1,5 @@
 import React from "react";
-import {StyleSheet, View, Dimensions} from "react-native";
+import {StyleSheet, View, Dimensions, TextComponent, Button, Text} from "react-native";
 import GameEngine from "./GameEngine";
 
 const acceleration = 1;
@@ -11,19 +11,32 @@ const playerWidth = 20;
 const platformHeight = 20;
 const platformSpeed = 2;
 
+const defaultState = {
+    velocity: 0,
+    y: floor,
+    platforms: [{x: 0, width: Dimensions.get('window').width * 2}],
+    dead: false
+}
+
 class Jumper extends React.Component {
     constructor(props) {
         super(props);
 
+        this.state = {
+            ...defaultState
+        }
+
+        this.shouldJump = false;
+        this.resets = 0;
+    }
+
+    reset = () => {
         this.shouldJump = false;
         this.resets = 0;
 
-        this.state = {
-            velocity: 0,
-            y: floor,
-            platforms: [{x: 0, width: Dimensions.get('window').width * 2}],
-            dead: false
-        };
+        this.setState({
+            ...defaultState
+        });
     }
 
     /**
@@ -140,7 +153,10 @@ class Jumper extends React.Component {
                     )}
                 </GameEngine>
                 {this.state.dead && <View style={styles.deathContainer}>
-
+                    <View style={styles.padding} />
+                    <Text style={[styles.gameOverText, styles.gameOverComponent]}>Game Over</Text>
+                    <Button style={styles.gameOverComponent} title="Play Again" onPress={this.reset} />
+                    <View style={styles.padding} />
                 </View>}
             </View>
         );
@@ -169,7 +185,19 @@ const styles = StyleSheet.create({
         height: "100%",
         width: "100%",
         backgroundColor: "grey",
-        opacity: 0.5
+        opacity: 0.5,
+        display: "flex",
+        flexDirection: "column"
+    },
+    gameOverText: {
+        textAlign: "center",
+        fontSize: 25
+    },
+    gameOverComponent: {
+        opacity: 1
+    },
+    padding: {
+        flex: 2
     }
 })
 
