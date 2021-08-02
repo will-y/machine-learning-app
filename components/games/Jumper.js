@@ -27,7 +27,7 @@ const defaultState = {
     shouldJump: false
 }
 
-//TODO: Move state methods outside class to be able to be called by trainer (maybe)
+
 class Jumper extends React.Component {
     constructor(props) {
         super(props);
@@ -89,7 +89,7 @@ class Jumper extends React.Component {
  * @param touching - true if the user is currently touching the screen
  * @returns object to be merged into the old state to become the new state
  */
-const stateUpdateFunction = (prev, touching) => {
+export const stateUpdateFunction = (prev, touching) => {
     if (!prev.dead) {
         let vel = prev.velocity;
         let jumpResets = prev.resets;
@@ -201,11 +201,11 @@ const checkDeath = y => {
 const isFloor = (state, y) => {
     const x = getPlayerXPos();
     return state.platforms.some(platform => {
-        return x + playerWidth / 2 >= platform.x - 3 && x - playerWidth / 2 <= platform.x + platform.width + 3;
+        return x + playerWidth >= platform.x - 3 && x <= platform.x + platform.width + 3;
     });
 }
 
-const getPlayerXPos = () => {
+export const getPlayerXPos = () => {
     return (Dimensions.get('window').width - playerWidth) / 2;
 }
 

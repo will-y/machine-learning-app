@@ -1,5 +1,6 @@
 import React from "react";
 import {Button, Text, View} from "react-native";
+import {stateUpdateFunction, getPlayerXPos} from "./games/Jumper";
 let { NEAT, activation, crossover, mutate } = require('neat_net-js');
 
 const populationSize = 200;
@@ -27,6 +28,15 @@ class TestTrain extends React.Component {
         for (let i = 0; i < populationSize; i++) {
 
         }
+    }
+
+    /**
+     * Takes the array of platforms and gets the closest one
+     * @param platforms
+     */
+    getClosestPlatformX = platforms => {
+        const x = getPlayerXPos();
+
     }
 
     render() {
