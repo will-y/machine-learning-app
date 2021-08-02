@@ -6,6 +6,7 @@ import {createStackNavigator} from "@react-navigation/stack";
 import Home from "./components/Home";
 import Games from "./components/Games";
 import Jumper from "./components/games/Jumper";
+import TestTrain from "./components/TestTrain";
 
 const Stack = createStackNavigator();
 
@@ -20,6 +21,7 @@ const App = () => {
             name="Games"
             component={Games} />
         <Stack.Screen name="Jumper" component={Jumper} />
+        <Stack.Screen name="JumperTrain" component={TestTrain} />
       </Stack.Navigator>
     </NavigationContainer>
   );

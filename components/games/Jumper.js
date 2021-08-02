@@ -23,9 +23,11 @@ const defaultState = {
     platformGapCounter: 0,
     platformGapMax: Dimensions.get('window').width,
     platformSpeed: platformSpeed,
-    resets: 0
+    resets: 0,
+    shouldJump: false
 }
 
+//TODO: Move state methods outside class to be able to be called by trainer (maybe)
 class Jumper extends React.Component {
     constructor(props) {
         super(props);
@@ -33,12 +35,9 @@ class Jumper extends React.Component {
         this.state = {
             ...defaultState
         }
-
-        this.shouldJump = false;
     }
 
     reset = () => {
-        this.shouldJump = false;
         this.resets = 0;
 
         this.setState({
@@ -46,123 +45,8 @@ class Jumper extends React.Component {
         });
     }
 
-    /**
-     * Takes in a list of platforms and moves them all to the left
-     * -platformSpeed distance.
-     * Will Remove all of the platforms that have moved off screen
-     * Will add new platforms as needed
-     * @param platforms - an array of platform objects
-     * @return a new array of new platforms
-     */
-    movePlatforms = (platforms, speed) => {
-        const result = [];
-
-        platforms.forEach(platform => {
-            // create new object
-            const newPlatform = {
-                x: platform.x - speed,
-                width: platform.width
-            }
-
-            // don't add if offscreen
-            if (newPlatform.x + newPlatform.width > 0) {
-                result.push(newPlatform)
-            }
-        })
-
-        return result;
-    }
-
-    addPlatforms = prev => {
-        let newCounter = prev.platformGapCounter + prev.platformSpeed;
-        let newPlatforms = this.movePlatforms(prev.platforms, prev.platformSpeed);
-        let newMaxCounter = prev.platformGapMax;
-
-        if (prev.platformGapCounter >= prev.platformGapMax) {
-            newCounter = 0;
-            const width = Math.floor(Math.random() * 200) + 50;
-            newPlatforms.push({
-                x: Dimensions.get("window").width,
-                width: width
-            });
-            newMaxCounter = width + Math.floor(Math.random() * (maxPlatformGap + Math.floor(prev.score / 1000) * 50 - minPlatformGap)) + minPlatformGap;
-        }
-
-        return {
-            platformGapCounter: newCounter,
-            platforms: newPlatforms,
-            platformGapMax: newMaxCounter
-        }
-    }
-
-    /**
-     * Detects if the player is standing on a platform
-     * @param state - the current state of the app, includes player and platform info
-     * @param y - the new y value of the player after applying the velocity
-     * @returns {boolean} - true if there is a platform under the player, false otherwise
-     */
-    isFloor(state, y) {
-        const x = this.getPlayerXPos();
-        return state.platforms.some(platform => {
-            return x + playerWidth / 2 >= platform.x - 3 && x - playerWidth / 2 <= platform.x + platform.width + 3;
-        });
-    }
-
     update = (touching) => {
-        this.setState((prev) => {
-            if (!prev.dead) {
-                let vel = prev.velocity;
-                let jumpResets = prev.resets;
-                if (touching && !this.shouldJump && prev.y === floor) {
-                    this.shouldJump = true;
-                }
-
-                if (!touching && this.shouldJump) {
-                    this.shouldJump = false;
-                    jumpResets = 0;
-                }
-
-                if (this.shouldJump && jumpResets < maxJumpResets) {
-                    vel = jumpSpeed;
-                    jumpResets++;
-                }
-
-                let y = prev.y - vel;
-                if (this.isFloor(prev, y) && y >= floor - maxSpeed / 2 && y <= floor + maxSpeed / 2) {
-                    y = floor;
-                    vel = 0;
-                } else {
-                    vel = vel - acceleration;
-                    if (Math.abs(vel) > maxSpeed) {
-                        vel = Math.sign(vel) * maxSpeed;
-                    }
-                }
-                return {
-                    y: y,
-                    velocity: vel,
-                    dead: this.checkDeath(y),
-                    score: prev.score + 1,
-                    ...this.addPlatforms(prev),
-                    platformSpeed: platformSpeed + Math.floor(prev.score / 1000),
-                    resets: jumpResets
-                }
-            } else {
-                return {};
-            }
-        });
-    }
-
-    /**
-     * Checks if the player has fallen off the screen in order to trigger the death screen
-     * @param y - y position of the player
-     * @return {boolean} true if player should die
-     */
-    checkDeath = y => {
-        return (y > Dimensions.get('window').height);
-    }
-
-    getPlayerXPos = () => {
-        return (Dimensions.get('window').width - playerWidth) / 2;
+        this.setState((prev) => stateUpdateFunction(prev, touching));
     }
 
     render() {
@@ -172,7 +56,7 @@ class Jumper extends React.Component {
                     <Text style={styles.score}>Score: {this.state.score}</Text>
                     <View style={[styles.player, {
                         top: this.state.y,
-                        left: this.getPlayerXPos()
+                        left: getPlayerXPos()
                     }]}/>
                     {this.state.platforms.map((platform, index) =>
                         <View key={index} style={[styles.platform, {
@@ -191,6 +75,138 @@ class Jumper extends React.Component {
             </View>
         );
     }
+}
+
+// Functions for manipulating the state
+// Shouldn't depend on the class component other than the state
+// Used for training
+/**
+ * Function to be called by set state
+ * Returns the new state object to be merged into the old state
+ * Also used in training to be able to use the update function without needing to deal with React states
+ * These functions shouldn't require access to anything in the class other than state
+ * @param prev - the previous state
+ * @param touching - true if the user is currently touching the screen
+ * @returns object to be merged into the old state to become the new state
+ */
+const stateUpdateFunction = (prev, touching) => {
+    if (!prev.dead) {
+        let vel = prev.velocity;
+        let jumpResets = prev.resets;
+        let shouldJump = prev.shouldJump;
+        if (touching && !shouldJump && prev.y === floor) {
+            shouldJump = true;
+        }
+
+        if (!touching && shouldJump) {
+            shouldJump = false;
+            jumpResets = 0;
+        }
+
+        if (shouldJump && jumpResets < maxJumpResets) {
+            vel = jumpSpeed;
+            jumpResets++;
+        }
+
+        let y = prev.y - vel;
+        if (isFloor(prev, y) && y >= floor - maxSpeed / 2 && y <= floor + maxSpeed / 2) {
+            y = floor;
+            vel = 0;
+        } else {
+            vel = vel - acceleration;
+            if (Math.abs(vel) > maxSpeed) {
+                vel = Math.sign(vel) * maxSpeed;
+            }
+        }
+        return {
+            y: y,
+            velocity: vel,
+            dead: checkDeath(y),
+            score: prev.score + 1,
+            ...addPlatforms(prev),
+            platformSpeed: platformSpeed + Math.floor(prev.score / 1000),
+            resets: jumpResets,
+            shouldJump: shouldJump
+        }
+    } else {
+        return {};
+    }
+}
+
+const addPlatforms = prev => {
+    let newCounter = prev.platformGapCounter + prev.platformSpeed;
+    let newPlatforms = movePlatforms(prev.platforms, prev.platformSpeed);
+    let newMaxCounter = prev.platformGapMax;
+
+    if (prev.platformGapCounter >= prev.platformGapMax) {
+        newCounter = 0;
+        const width = Math.floor(Math.random() * 200) + 50;
+        newPlatforms.push({
+            x: Dimensions.get("window").width,
+            width: width
+        });
+        newMaxCounter = width + Math.floor(Math.random() * (maxPlatformGap + Math.floor(prev.score / 1000) * 50 - minPlatformGap)) + minPlatformGap;
+    }
+
+    return {
+        platformGapCounter: newCounter,
+        platforms: newPlatforms,
+        platformGapMax: newMaxCounter
+    }
+}
+
+/**
+ * Takes in a list of platforms and moves them all to the left
+ * -platformSpeed distance.
+ * Will Remove all of the platforms that have moved off screen
+ * Will add new platforms as needed
+ * @param platforms - an array of platform objects
+ * @param speed - the speed that the platforms move
+ * @return a new array of new platforms
+ */
+const movePlatforms = (platforms, speed) => {
+    const result = [];
+
+    platforms.forEach(platform => {
+        // create new object
+        const newPlatform = {
+            x: platform.x - speed,
+            width: platform.width
+        }
+
+        // don't add if offscreen
+        if (newPlatform.x + newPlatform.width > 0) {
+            result.push(newPlatform)
+        }
+    })
+
+    return result;
+}
+
+/**
+ * Checks if the player has fallen off the screen in order to trigger the death screen
+ * @param y - y position of the player
+ * @return {boolean} true if player should die
+ */
+const checkDeath = y => {
+    return (y > Dimensions.get('window').height);
+}
+
+/**
+ * Detects if the player is standing on a platform
+ * @param state - the current state of the app, includes player and platform info
+ * @param y - the new y value of the player after applying the velocity
+ * @returns {boolean} - true if there is a platform under the player, false otherwise
+ */
+const isFloor = (state, y) => {
+    const x = getPlayerXPos();
+    return state.platforms.some(platform => {
+        return x + playerWidth / 2 >= platform.x - 3 && x - playerWidth / 2 <= platform.x + platform.width + 3;
+    });
+}
+
+const getPlayerXPos = () => {
+    return (Dimensions.get('window').width - playerWidth) / 2;
 }
 
 const styles = StyleSheet.create({

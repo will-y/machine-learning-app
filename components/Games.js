@@ -20,7 +20,9 @@ const Games = ({ navigation }) => {
                             <Button style={styles.button} title="Play" onPress={() => {
                                 navigation.navigate(title)
                             }} />
-                            <Button style={styles.button} title="Train" onPress={() => {}} />
+                            <Button style={styles.button} title="Train" onPress={() => {
+                                navigation.navigate(title + "Train")
+                            }} />
                         </View>
                     </View>
                 );
