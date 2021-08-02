@@ -10,12 +10,19 @@ const playerHeight = 50;
 const playerWidth = 20;
 const platformHeight = 20;
 const platformSpeed = 2;
+const minPlatformGap = 30;
+const maxPlatformGap = 85;
+const maxSpeed = 14;
 
 const defaultState = {
     velocity: 0,
     y: floor,
     platforms: [{x: 0, width: Dimensions.get('window').width * 2}],
-    dead: false
+    dead: false,
+    score: 0,
+    platformGapCounter: 0,
+    platformGapMax: Dimensions.get('window').width,
+    platformSpeed: platformSpeed
 }
 
 class Jumper extends React.Component {
@@ -47,13 +54,13 @@ class Jumper extends React.Component {
      * @param platforms - an array of platform objects
      * @return a new array of new platforms
      */
-    movePlatforms = (platforms) => {
+    movePlatforms = (platforms, speed) => {
         const result = [];
 
         platforms.forEach(platform => {
             // create new object
             const newPlatform = {
-                x: platform.x - platformSpeed,
+                x: platform.x - speed,
                 width: platform.width
             }
 
@@ -66,6 +73,28 @@ class Jumper extends React.Component {
         return result;
     }
 
+    addPlatforms = prev => {
+        let newCounter = prev.platformGapCounter + prev.platformSpeed;
+        let newPlatforms = this.movePlatforms(prev.platforms, prev.platformSpeed);
+        let newMaxCounter = prev.platformGapMax;
+
+        if (prev.platformGapCounter >= prev.platformGapMax) {
+            newCounter = 0;
+            const width = Math.floor(Math.random() * 200) + 50;
+            newPlatforms.push({
+                x: Dimensions.get("window").width,
+                width: width
+            });
+            newMaxCounter = width + Math.floor(Math.random() * (maxPlatformGap + Math.floor(prev.score / 1000) * 50 - minPlatformGap)) + minPlatformGap;
+        }
+
+        return {
+            platformGapCounter: newCounter,
+            platforms: newPlatforms,
+            platformGapMax: newMaxCounter
+        }
+    }
+
     /**
      * Detects if the player is standing on a platform
      * @param state - the current state of the app, includes player and platform info
@@ -75,7 +104,7 @@ class Jumper extends React.Component {
     isFloor(state, y) {
         const x = this.getPlayerXPos();
         return state.platforms.some(platform => {
-            return x >= platform.x && x <= platform.x + platform.width;
+            return x + playerWidth / 2 >= platform.x - 3 && x - playerWidth / 2 <= platform.x + platform.width + 3;
         });
     }
 
@@ -90,17 +119,22 @@ class Jumper extends React.Component {
                 }
 
                 let y = prev.y - vel;
-                if (this.isFloor(prev, y) && y >= floor) {
+                if (this.isFloor(prev, y) && y >= floor - maxSpeed / 2 && y <= floor + maxSpeed / 2) {
                     y = floor;
                     vel = 0;
                 } else {
                     vel = vel - acceleration;
+                    if (Math.abs(vel) > maxSpeed) {
+                        vel = Math.sign(vel) * maxSpeed;
+                    }
                 }
                 return {
                     y: y,
                     velocity: vel,
-                    platforms: this.movePlatforms(prev.platforms),
-                    dead: this.checkDeath(y)
+                    dead: this.checkDeath(y),
+                    score: prev.score + 1,
+                    ...this.addPlatforms(prev),
+                    platformSpeed: platformSpeed + Math.floor(prev.score / 1000)
                 }
             } else {
                 return {};
@@ -119,14 +153,12 @@ class Jumper extends React.Component {
 
     // TODO: Very short press can result in not jumping
     onPressIn = () => {
-        console.log("press in");
         if (this.state.y === floor) {
             this.shouldJump = true;
         }
     }
 
     onPressOut = () => {
-        console.log("press out");
         this.shouldJump = false;
         this.resets = 0;
     }
@@ -141,6 +173,7 @@ class Jumper extends React.Component {
                 <GameEngine updateFunction={this.update}
                             onPressIn={this.onPressIn}
                             onPressOut={this.onPressOut}>
+                    <Text style={styles.score}>Score: {this.state.score}</Text>
                     <View style={[styles.player, {
                         top: this.state.y,
                         left: this.getPlayerXPos()
@@ -155,6 +188,7 @@ class Jumper extends React.Component {
                 {this.state.dead && <View style={styles.deathContainer}>
                     <View style={styles.padding} />
                     <Text style={[styles.gameOverText, styles.gameOverComponent]}>Game Over</Text>
+                    <Text style={[styles.gameOverText, styles.gameOverComponent]}>Score: {this.state.score}</Text>
                     <Button style={styles.gameOverComponent} title="Play Again" onPress={this.reset} />
                     <View style={styles.padding} />
                 </View>}
@@ -198,6 +232,13 @@ const styles = StyleSheet.create({
     },
     padding: {
         flex: 2
+    },
+    score: {
+        fontSize: 20,
+        textAlign: "center",
+        position: "absolute",
+        top: 20,
+        width: "100%"
     }
 })
 
