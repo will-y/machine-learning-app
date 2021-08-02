@@ -6,7 +6,7 @@ const acceleration = 1;
 const floor = Dimensions.get("window").height - 200;
 const jumpSpeed = 10;
 const maxJumpResets = 15;
-const playerHeight = 50;
+const playerHeight = 20;
 const playerWidth = 20;
 const platformHeight = 20;
 const platformSpeed = 2;
@@ -22,7 +22,8 @@ const defaultState = {
     score: 0,
     platformGapCounter: 0,
     platformGapMax: Dimensions.get('window').width,
-    platformSpeed: platformSpeed
+    platformSpeed: platformSpeed,
+    resets: 0
 }
 
 class Jumper extends React.Component {
@@ -34,7 +35,6 @@ class Jumper extends React.Component {
         }
 
         this.shouldJump = false;
-        this.resets = 0;
     }
 
     reset = () => {
@@ -108,14 +108,23 @@ class Jumper extends React.Component {
         });
     }
 
-    update = () => {
+    update = (touching) => {
         this.setState((prev) => {
             if (!prev.dead) {
                 let vel = prev.velocity;
+                let jumpResets = prev.resets;
+                if (touching && !this.shouldJump && prev.y === floor) {
+                    this.shouldJump = true;
+                }
 
-                if (this.shouldJump && this.resets < maxJumpResets) {
+                if (!touching && this.shouldJump) {
+                    this.shouldJump = false;
+                    jumpResets = 0;
+                }
+
+                if (this.shouldJump && jumpResets < maxJumpResets) {
                     vel = jumpSpeed;
-                    this.resets++;
+                    jumpResets++;
                 }
 
                 let y = prev.y - vel;
@@ -134,7 +143,8 @@ class Jumper extends React.Component {
                     dead: this.checkDeath(y),
                     score: prev.score + 1,
                     ...this.addPlatforms(prev),
-                    platformSpeed: platformSpeed + Math.floor(prev.score / 1000)
+                    platformSpeed: platformSpeed + Math.floor(prev.score / 1000),
+                    resets: jumpResets
                 }
             } else {
                 return {};
@@ -151,18 +161,6 @@ class Jumper extends React.Component {
         return (y > Dimensions.get('window').height);
     }
 
-    // TODO: Very short press can result in not jumping
-    onPressIn = () => {
-        if (this.state.y === floor) {
-            this.shouldJump = true;
-        }
-    }
-
-    onPressOut = () => {
-        this.shouldJump = false;
-        this.resets = 0;
-    }
-
     getPlayerXPos = () => {
         return (Dimensions.get('window').width - playerWidth) / 2;
     }
@@ -170,9 +168,7 @@ class Jumper extends React.Component {
     render() {
         return (
             <View style={styles.container}>
-                <GameEngine updateFunction={this.update}
-                            onPressIn={this.onPressIn}
-                            onPressOut={this.onPressOut}>
+                <GameEngine updateFunction={this.update}>
                     <Text style={styles.score}>Score: {this.state.score}</Text>
                     <View style={[styles.player, {
                         top: this.state.y,

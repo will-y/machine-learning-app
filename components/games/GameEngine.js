@@ -13,6 +13,8 @@ class GameEngine extends React.Component {
         this.onPressOut = this.props.onPressOut ? this.props.onPressOut : this.noop;
         this.onPress = this.props.onPress ? this.props.onPress : this.noop;
 
+        this.touching = false;
+
         this.timerId = null;
     }
 
@@ -22,6 +24,16 @@ class GameEngine extends React.Component {
 
     componentWillUnmount() {
         this.stop();
+    }
+
+    pressIn = () => {
+        this.touching = true;
+        this.onPressIn();
+    }
+
+    pressOut = () => {
+        this.touching = false;
+        this.onPressOut();
     }
 
     start = () => {
@@ -40,7 +52,7 @@ class GameEngine extends React.Component {
     step = () => {
         if (this.timerId) {
             if (this.updateFunction) {
-                this.updateFunction();
+                this.updateFunction(this.touching);
             }
         }
 
@@ -50,8 +62,8 @@ class GameEngine extends React.Component {
     render = () => {
         return (
             <TouchableWithoutFeedback onPress={this.onPress}
-                                      onPressIn={this.onPressIn}
-                                      onPressOut={this.onPressOut}>
+                                      onPressIn={this.pressIn}
+                                      onPressOut={this.pressOut}>
                 <View style={styles.container}>
                     <View style={styles.gameContainer}>
                         {this.props.children}
