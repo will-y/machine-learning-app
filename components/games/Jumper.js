@@ -14,7 +14,7 @@ const minPlatformGap = 30;
 const maxPlatformGap = 85;
 const maxSpeed = 14;
 
-const defaultState = {
+export const defaultState = {
     velocity: 0,
     y: floor,
     platforms: [{x: 0, width: Dimensions.get('window').width * 2}],
